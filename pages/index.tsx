@@ -1,115 +1,108 @@
-import Image from "next/image";
-import localFont from "next/font/local";
+import { translate } from '@vitalets/google-translate-api'
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
-});
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  weight: "100 900",
-});
+import { format } from 'sql-formatter';
 
 export default function Home() {
+  // Detect Japanese characters regex
+  const regex = /[\u3000-\u303F]|[\u3040-\u309F]|[\u30A0-\u30FF]|[\uFF00-\uFFEF]|[\u4E00-\u9FAF]|[\u2605-\u2606]|[\u2190-\u2195]|\u203B/g;
+
+  async function handleOnClickClean() {
+    const inEl = document.getElementById("input") as HTMLTextAreaElement
+    const outEl = document.getElementById("output") as HTMLTextAreaElement
+
+    // Remove and correct sql command characters
+    let sql = inEl.value
+      .replaceAll("\"", "")
+      .replaceAll("+", "")
+      .replaceAll("''", "'")
+
+    // Format sql
+    sql = format(sql, {
+      language: 'mysql',
+      keywordCase: 'upper'
+    })
+
+    // Split sql command to get Japanese words
+    const arr = sql
+      .split('\n')
+      .map(v => v.split(' ')
+        .filter(v2 => v2 !== "")
+        .filter(v3 => v3 !== "'　'")
+        .filter(v4 => regex.test(v4)))
+      .flat()
+
+    // Translate words contain Japanese characters
+    if (arr.length > 0) {
+      sql = await addTranslateSuffix(sql, arr)
+      outEl.value = sql
+    }
+
+    outEl.value = sql
+  }
+
+  async function addTranslateSuffix(sql: string, arr: string[]): Promise<string> {
+    const arrStr = arr.join()
+
+    try {
+      const {text} = await translate(arrStr, {to: 'en'})
+      console.log(text)
+    } catch (e) {
+      console.log(e)
+    }
+
+    return sql
+  }
+
   return (
     <div
-      className={`${geistSans.variable} ${geistMono.variable} grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]`}
+      className="p-8"
     >
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              pages/index.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+      {/*Header*/}
+      <header>
+        <h1 className="font-bold text-4xl">SQL Cleaner</h1>
+        <span>A support tool for clean sql commands</span>
+      </header>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+      {/*Main content*/}
+      <main className="mt-12">
+        {/*Action Button*/}
+        <div className="flex justify-end">
+          <button type="button"
+                  className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800"
+                  onClick={handleOnClickClean}
+          >Clean
+          </button>
+
+        </div>
+
+        {/*Main Content*/}
+        <div className="flex flex-row mt-6">
+          {/*Input*/}
+          <div className="flex-1">
+            <label htmlFor="input"
+                   className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Input</label>
+            <textarea id="input"
+                      className="block p-2.5 w-full h-1/2 text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                      placeholder="Enter the dirty SQL command here"
+            ></textarea>
+
+          </div>
+
+          {/*Separator*/}
+          <div className="w-5"></div>
+
+          {/*Output*/}
+          <div className="flex-1 h-screen">
+            <label htmlFor="output"
+                   className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Output</label>
+            <textarea id="output"
+                      className="block p-2.5 w-full h-1/2 text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                      placeholder="Beauty SQL command will be show here"
+                      readOnly
+            ></textarea>
+          </div>
         </div>
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
     </div>
   );
 }
