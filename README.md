@@ -38,3 +38,23 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/pages/building-your-application/deploying) for more details.
+
+## CORS Issues
+This project using [@vitalets/google-translate-api](https://github.com/vitalets/google-translate-api), that used Google Translate api. Because `translate.google.com` do not provide CORS headers allowing access from other domains.
+
+So, for the temporary solution: open Chrome browser without security.
+
+For Mac OS X / macOS, open Terminal and run:
+```bash
+open -n -a /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --args --user-data-dir="/tmp/chrome_dev_test" --disable-web-security
+```
+
+For Linux run:
+```bash
+google-chrome --disable-web-security
+```
+
+For Windows, go into the command prompt and go into the folder where Chrome.exe is and type
+```bash
+chrome.exe --disable-web-security
+```
